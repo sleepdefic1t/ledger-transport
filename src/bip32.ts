@@ -22,6 +22,23 @@ export class Bip32Path {
     }
 
     /**
+     * Parses a Bip32 path-string, storing the path as elements,
+     * and returns a Bip32Path instance.
+     *
+     * @param {string} path a bip32 path as a string
+     * @throws {Error} if the path-string is null
+     * @throws {Error} if the path-string has a length of '0'
+     * @returns {Bip32Path} a new instance containing parsed path elements
+     */
+    public static fromString(path: string): Bip32Path {
+        if (!path || path.length === 0) {
+            throw new Bip32PathError();
+        }
+
+        return this.toElements(path);
+    }
+
+    /**
      * Parses and stores a Bip32 Path-string as an array of elements to the 'Bip32Path' instance.
      *
      * @param {string} path a bip32 path as a string
@@ -30,16 +47,10 @@ export class Bip32Path {
      * @throws {Error} if the path-string has non-numeric characters
      * @returns {Bip32Path} a new instance containing parsed path elements
      */
-    public static fromString(path: string): Bip32Path {
+    protected static toElements(path: string): Bip32Path {
         const _elements: number[] = [];
-
-        if (!path || path.length === 0) {
-            throw new Bip32PathError();
-        }
-
         for (const level of path.split("/")) {
             let element = parseInt(level, 10);
-
             if (isNaN(element)) {
                 throw new Bip32ElementError();
             }
