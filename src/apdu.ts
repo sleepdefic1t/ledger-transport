@@ -125,7 +125,7 @@ export class Apdu {
         }
     }
 
-    private async sendChunked(transport: LedgerTransport<any>): Promise<Buffer[]> {
+    private async sendChunked(transport: LedgerTransport): Promise<Buffer[]> {
         const chunks = this.getChunks(this._payload);
         const promises: Buffer[] = [];
 

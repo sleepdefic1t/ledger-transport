@@ -14,7 +14,7 @@ import { Transport } from "./contracts";
  * - INS_SIGN_TRANSACTION
  * - INS_SIGN_MESSAGE
  */
-export default class ARK implements Transport {
+export class ARK implements Transport {
     private transport: LedgerTransport;
 
     /**

@@ -9,7 +9,7 @@ import { Bip32ElementError, Bip32PathError } from "./errors";
  * @example const bip32Bytes = Bip32Path.fromString("44'/111'/0'/0/0").toBytes();
  */
 export class Bip32Path {
-    private static readonly HARDENED = 0x80000000;
+    private static readonly HARDENED: number = 0x80000000;
     protected _elements: number[] = [];
 
     /**
@@ -77,14 +77,12 @@ export class Bip32Path {
      * @returns {Buffer} a byte buffer of parsed bip32 path elements
      */
     public toBytes(): Buffer {
-        const bufferSize = 1 + this._elements.length * 4;
-        const payload = Buffer.alloc(bufferSize);
+        const payload = Buffer.alloc(1 + this._elements.length * 4);
         payload[0] = this._elements.length;
 
         let index = 0;
         for (const element of this._elements) {
-            const offset = 1 + index * 4;
-            payload.writeUInt32BE(element, offset);
+            payload.writeUInt32BE(element, 1 + index * 4);
             index += 1;
         }
 
