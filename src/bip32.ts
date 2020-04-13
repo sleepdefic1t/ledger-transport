@@ -9,6 +9,7 @@ import { Bip32ElementError, Bip32PathError } from "./errors";
  * @example const bip32Bytes = Bip32Path.fromString("44'/111'/0'/0/0").toBytes();
  */
 export class Bip32Path {
+    private static readonly HARDENED = 0x80000000;
     protected _elements: number[] = [];
 
     /**
@@ -35,7 +36,7 @@ export class Bip32Path {
             throw new Bip32PathError();
         }
 
-        return this.toElements(path);
+        return this.pathToElements(path);
     }
 
     /**
@@ -47,7 +48,7 @@ export class Bip32Path {
      * @throws {Error} if the path-string has non-numeric characters
      * @returns {Bip32Path} a new instance containing parsed path elements
      */
-    protected static toElements(path: string): Bip32Path {
+    protected static pathToElements(path: string): Bip32Path {
         const _elements: number[] = [];
         for (const level of path.split("/")) {
             let element = parseInt(level, 10);
@@ -57,7 +58,7 @@ export class Bip32Path {
 
             if (level.length > 1 && level.endsWith("'")) {
                 // Use hardening
-                element += 0x80000000;
+                element += Bip32Path.HARDENED;
             }
 
             _elements.push(element);
@@ -76,12 +77,14 @@ export class Bip32Path {
      * @returns {Buffer} a byte buffer of parsed bip32 path elements
      */
     public toBytes(): Buffer {
-        const payload = Buffer.alloc(1 + this._elements.length * 4);
+        const bufferSize = 1 + this._elements.length * 4;
+        const payload = Buffer.alloc(bufferSize);
         payload[0] = this._elements.length;
 
         let index = 0;
         for (const element of this._elements) {
-            payload.writeUInt32BE(element, 1 + 4 * index);
+            const offset = 1 + index * 4;
+            payload.writeUInt32BE(element, offset);
             index += 1;
         }
 

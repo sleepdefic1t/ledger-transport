@@ -15,7 +15,7 @@ import { Transport } from "./contracts";
  * - INS_SIGN_MESSAGE
  */
 export default class ARK implements Transport {
-    private transport: LedgerTransport<any>;
+    private transport: LedgerTransport;
 
     /**
      * Create an instance using a 'LedgerTransport' object.
@@ -26,7 +26,7 @@ export default class ARK implements Transport {
      * @param {LedgerTransport} transport generic transport interface for Ledger HW.
      * @throws {Error} if 'LedgerTransport' is busy with another instruction.
      */
-    public constructor(transport: LedgerTransport<any>) {
+    public constructor(transport: LedgerTransport) {
         this.transport = transport;
         this.transport.decorateAppAPIMethods(
             this,
