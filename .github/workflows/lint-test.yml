@@ -71,4 +71,6 @@ jobs:
               run: yarn test
 
             - name: Codecov
-              run: ./node_modules/.bin/codecov --token=${{ secrets.CODECOV_TOKEN }}
+              run: |
+                yarn test:coverage
+                ./node_modules/.bin/codecov --token=${{ secrets.CODECOV_TOKEN }}
