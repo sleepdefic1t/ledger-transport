@@ -14,7 +14,7 @@ module.exports = {
     },
     coverageDirectory: "<rootDir>/.coverage",
     collectCoverageFrom: ["<rootDir>/src/**/{!(index),}.ts", "<rootDir>/__tests__/unit/*.test.ts"],
-    coverageReporters: ["json", "lcov", "text", "clover", "html"],
+    coverageReporters: ["json", "gcov", "lcov", "text", "clover", "html"],
     watchman: false,
     setupFilesAfterEnv: ["jest-extended"],
     globals: {
