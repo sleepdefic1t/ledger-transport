@@ -1,6 +1,6 @@
 import { Transport as LedgerTransport } from "@ledgerhq/hw-transport";
 
-import { Apdu, ApduFlags } from "./apdu";
+import { Apdu, ApduFlag } from "./apdu";
 import { Bip32Path } from "./bip32";
 import { Transport } from "./contracts";
 
@@ -42,10 +42,10 @@ export class ARK implements Transport {
      */
     public async getVersion(): Promise<string> {
         const response = await new Apdu(
-            ApduFlags.CLA,
-            ApduFlags.INS_GET_VERSION,
-            ApduFlags.P1_NON_CONFIRM,
-            ApduFlags.P2_NO_CHAINCODE,
+            ApduFlag.CLA,
+            ApduFlag.INS_GET_VERSION,
+            ApduFlag.P1_NON_CONFIRM,
+            ApduFlag.P2_NO_CHAINCODE,
         ).send(this.transport);
 
         return `${response[1]}.${response[2]}.${response[3]}`;
@@ -59,10 +59,10 @@ export class ARK implements Transport {
      */
     public async getPublicKey(path: string): Promise<string> {
         const response = await new Apdu(
-            ApduFlags.CLA,
-            ApduFlags.INS_GET_PUBLIC_KEY,
-            ApduFlags.P1_NON_CONFIRM,
-            ApduFlags.P2_NO_CHAINCODE,
+            ApduFlag.CLA,
+            ApduFlag.INS_GET_PUBLIC_KEY,
+            ApduFlag.P1_NON_CONFIRM,
+            ApduFlag.P2_NO_CHAINCODE,
             Bip32Path.fromString(path).toBytes(),
         ).send(this.transport);
 
@@ -77,7 +77,7 @@ export class ARK implements Transport {
      * @returns {Promise<string>} payload signature
      */
     public async signMessage(path: string, hex: Buffer): Promise<string> {
-        return this.sign(ApduFlags.INS_SIGN_MESSAGE, path, hex);
+        return this.sign(ApduFlag.INS_SIGN_MESSAGE, path, hex);
     }
 
     /**
@@ -88,7 +88,7 @@ export class ARK implements Transport {
      * @returns {Promise<string>} payload signature
      */
     public async signTransaction(path: string, hex: Buffer): Promise<string> {
-        return this.sign(ApduFlags.INS_SIGN_TRANSACTION, path, hex);
+        return this.sign(ApduFlag.INS_SIGN_TRANSACTION, path, hex);
     }
 
     /**
@@ -101,10 +101,10 @@ export class ARK implements Transport {
      */
     private async sign(ins: number, path: string, hex: Buffer): Promise<string> {
         const response = await new Apdu(
-            ApduFlags.CLA,
+            ApduFlag.CLA,
             ins,
-            ApduFlags.P1_SINGLE,
-            ApduFlags.P2_ECDSA,
+            ApduFlag.P1_SINGLE,
+            ApduFlag.P2_ECDSA,
             Buffer.concat([Bip32Path.fromString(path).toBytes(), hex]),
         ).send(this.transport);
 

@@ -18,18 +18,18 @@ export class LedgerTransportError extends Error {
 
 export class ApduPayloadLengthError extends LedgerTransportError {
     public constructor(expected: number, limit: number) {
-        super("Payload length of ${expected} exceeds ${limit}.");
+        super(`Payload length of ${expected} exceeds ${limit}.`);
     }
 }
 
 export class Bip32ElementError extends LedgerTransportError {
     public constructor() {
-        super("Invalid Bip32 Element.");
+        super(`Invalid Bip32 Element.`);
     }
 }
 
 export class Bip32PathError extends LedgerTransportError {
     public constructor() {
-        super("Invalid Bip32 Path.");
+        super(`Invalid Bip32 Path.`);
     }
 }

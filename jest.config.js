@@ -13,7 +13,7 @@ module.exports = {
         "@tests/(.*)$": "<rootDir>/__tests__/$1",
     },
     coverageDirectory: "<rootDir>/.coverage",
-    collectCoverageFrom: ["<rootDir>/src/**/!(index)*.ts", "<rootDir>/__tests__/unit/*.test.ts"],
+    collectCoverageFrom: ["<rootDir>/src/**/{!(index),}.ts", "<rootDir>/__tests__/unit/*.test.ts"],
     coverageReporters: ["json", "lcov", "text", "clover", "html"],
     watchman: false,
     setupFilesAfterEnv: ["jest-extended"],

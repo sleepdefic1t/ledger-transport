@@ -39,7 +39,7 @@ import { ApduPayloadLengthError } from "./errors";
  * - P2_ECDSA: Use Ecdsa Signatures
  *
  */
-export enum ApduFlags {
+export enum ApduFlag {
     /** APDU Class */
     CLA = 0xe0,
 
@@ -77,9 +77,14 @@ export class Apdu {
     private readonly PAYLOAD_MAX: number = this.CHUNK_MAX * this.CHUNK_SIZE;
 
     /**
-     * Construct an instance of a Bip32 Path Builder, given a string-path.
+     * Construct an Apdu instance.
      *
-     * @param {Buffer} path a bip32 hd path, ("44'/111'/0'/0/0")
+     * @param {number} cla a class byte
+     * @param {number} ins an instruction byte
+     * @param {number} p1 a parameter-1 byte
+     * @param {number} p2 a parameter-2 byte
+     * @param {Buffer} payload an optional payload
+     * @throws {ApduPayloadLengthError} if the payload is too big to be processed
      */
     public constructor(cla: number, ins: number, p1: number, p2: number, payload: Buffer = Buffer.alloc(0)) {
         this.cla = cla;
@@ -93,6 +98,12 @@ export class Apdu {
         }
     }
 
+    /**
+     * Send an Apdu payload for handling by a Ledger device.
+     *
+     * @param {LedgerTransport} transport the transport instance over which to send the apdu call
+     * @returns {Promise<Buffer>} the apdu response, e.g. from a Ledger device
+     */
     public async send(transport: LedgerTransport): Promise<Buffer> {
         let promises: Buffer[] = [];
 
@@ -106,49 +117,54 @@ export class Apdu {
     }
 
     /**
-     * Split an Apdu Payload into a Chunked Array.
+     * Split the Apdu Payload into a Chunked Array.
      *
-     * @param {Buffer} payload a flat payload string buffer
-     * @param {number} chunksize how big each chunk should be
-     * @return {Buffer}
+     * @returns {Buffer} the chunked payload of an Apdu instance
      */
     private getChunks(): Buffer[] {
         return this._payload
             .toString("hex")
-            .match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"))!  // @ts-ignore
+            .match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"))! // @ts-ignore
             .map((chunk) => Buffer.from(chunk, "hex"));
     }
 
     /**
-     * Split an Apdu Payload into a Chunked array.
+     * Get the Segment Flag (P1) of a given chunk.
      *
-     * @param {Buffer} payload an flat payload string buffer.
+     * @param {Buffer} index the index of the current chunk
+     * @param {Buffer} length total length of the payload
+     * @returns {ApduFlag} which segment of a payload is being sent
      */
-    private getSegmentFlag(chunk: Buffer, size: number, index: number): ApduFlags {
+    private getSegmentFlag(index: number, length: number): ApduFlag {
         /** set the payload segment flag */
-        if (index > 0 && index < size - 1) {
+        if (index > 0 && index < length - 1) {
             /** N(2)..N-1 where N > 2 */
-            return ApduFlags.P1_MORE;
-        } else if (index === size - 1 && size > 1) {
+            return ApduFlag.P1_MORE;
+        } else if (index === length - 1 && length > 1) {
             /** Nth where N > 1 */
-            return ApduFlags.P1_LAST;
+            return ApduFlag.P1_LAST;
         } else {
-            return ApduFlags.P1_FIRST;
+            return ApduFlag.P1_FIRST;
         }
     }
 
+    /**
+     * Send a large Apdu payload in chunks for handling by a Ledger device.
+     *
+     * @param {LedgerTransport} transport the transport instance over which to send the apdu call
+     * @returns {Promise<Buffer>} the apdu response, e.g. from a Ledger device
+     */
     private async sendChunked(transport: LedgerTransport): Promise<Buffer[]> {
         const chunks = this.getChunks();
         const promises: Buffer[] = [];
 
         let index = 0;
         for (const chunk of chunks) {
-            /** send the Apdu chunk */
             promises.push(
                 await transport.send(
                     this.cla,
                     this.ins,
-                    this.getSegmentFlag(chunk, chunks.length, index),
+                    this.getSegmentFlag(index, chunks.length),
                     this.p2,
                     chunk,
                 ),
