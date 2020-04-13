@@ -12,7 +12,6 @@ module.exports = {
         "@packages/(.*)$": "<rootDir>/packages/$1",
         "@tests/(.*)$": "<rootDir>/__tests__/$1",
     },
-    // collectCoverage: false,
     coverageDirectory: "<rootDir>/.coverage",
     collectCoverageFrom: ["<rootDir>/src/**/!(index)*.ts", "<rootDir>/__tests__/unit/*.test.ts"],
     coverageReporters: ["json", "lcov", "text", "clover", "html"],

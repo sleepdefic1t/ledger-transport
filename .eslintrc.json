@@ -39,6 +39,7 @@
         "no-empty": "off",
         "no-inferrable-types": "off",
         "no-prototype-builtins": "off",
+        "no-unexpected-multiline": "error",
         "prefer-const": [
             "error",
             {

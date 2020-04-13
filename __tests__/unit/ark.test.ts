@@ -6,7 +6,7 @@ import { ARKTransport } from "../../src/index";
 import { Fixtures } from "./__fixtures__/transport-fixtures";
 
 class TransportMock {
-    protected readonly record = RecordStore;
+    protected readonly record: RecordStore;
 
     private constructor(record: RecordStore) {
         this.record = record;

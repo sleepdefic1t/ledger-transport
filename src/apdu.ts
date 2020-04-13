@@ -105,13 +105,25 @@ export class Apdu {
         return Buffer.concat(promises.map((r) => r.slice(0, r.length - 2)));
     }
 
-    private getChunks(payload: Buffer): Buffer[] {
-        return payload
+    /**
+     * Split an Apdu Payload into a Chunked Array.
+     *
+     * @param {Buffer} payload a flat payload string buffer
+     * @param {number} chunksize how big each chunk should be
+     * @return {Buffer}
+     */
+    private getChunks(): Buffer[] {
+        return this._payload
             .toString("hex")
-            .match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"))! /** '!', this should never fail  */
+            .match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"))!  // @ts-ignore
             .map((chunk) => Buffer.from(chunk, "hex"));
     }
 
+    /**
+     * Split an Apdu Payload into a Chunked array.
+     *
+     * @param {Buffer} payload an flat payload string buffer.
+     */
     private getSegmentFlag(chunk: Buffer, size: number, index: number): ApduFlags {
         /** set the payload segment flag */
         if (index > 0 && index < size - 1) {
@@ -126,7 +138,7 @@ export class Apdu {
     }
 
     private async sendChunked(transport: LedgerTransport): Promise<Buffer[]> {
-        const chunks = this.getChunks(this._payload);
+        const chunks = this.getChunks();
         const promises: Buffer[] = [];
 
         let index = 0;

@@ -20,7 +20,7 @@ export class ARK implements Transport {
     /**
      * Create an instance using a 'LedgerTransport' object.
      *
-     * 'decorateAppAPIMethods' basically "locks" the instance,
+     * 'decorateAppAPIMethods' basically "locks" execution of the current instruction,
      * preventing race conditions where parallel calls are attempted.
      *
      * @param {LedgerTransport} transport generic transport interface for Ledger HW.

@@ -6,7 +6,7 @@ import { Bip32ElementError, Bip32PathError } from "./errors";
  * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
  * https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
  *
- * @example const bip32Bytes = Bip32Path.fromString("44'/111'/0'/0/0").toBytes();
+ * @example const bip32Bytes = Bip32Path.fromString("44'/111'/0'/0/0").toBytes()
  */
 export class Bip32Path {
     private static readonly HARDENED: number = 0x80000000;
@@ -25,6 +25,8 @@ export class Bip32Path {
     /**
      * Parses a Bip32 path-string, storing the path as elements,
      * and returns a Bip32Path instance.
+     *
+     * Elements are stored as a 4-byte/uint32 Big-Endian-packed number array.
      *
      * @param {string} path a bip32 path as a string
      * @throws {Error} if the path-string is null
@@ -69,8 +71,6 @@ export class Bip32Path {
 
     /**
      * Get the bytes of a Parsed Bip32 Element Array.
-     *
-     * Elements stored as a 4-byte/uint32 Big-Endian-packed number array.
      *
      * @returns {Buffer} a buffer of bytes representing the path
      * @throws {Error} if the internal bip32 element array has a length of '0'
