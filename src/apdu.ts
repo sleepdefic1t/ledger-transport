@@ -1,6 +1,6 @@
 import { Transport as LedgerTransport } from "@ledgerhq/hw-transport";
 
-import { ApduPayloadLengthError } from "./errors";
+import { ApduPayloadChunkError, ApduPayloadLengthError } from "./errors";
 
 /**
  * APDU Header Flags
@@ -65,6 +65,11 @@ export enum ApduFlag {
     P2_ECDSA = 0x40,
 }
 
+/**
+ * Create and manage an Apdu payload instance for sending to a Ledger device.
+ *
+ * @example const response = await new Apdu(CLA, INS, P1, P2, Payload).send(this.transport);
+ */
 export class Apdu {
     public readonly cla: number;
     public readonly ins: number;
@@ -102,7 +107,7 @@ export class Apdu {
      * Send an Apdu payload for handling by a Ledger device.
      *
      * @param {LedgerTransport} transport the transport instance over which to send the apdu call
-     * @returns {Promise<Buffer>} the apdu response, e.g. from a Ledger device
+     * @returns {Promise<Buffer>} the apdu response from a Ledger device
      */
     public async send(transport: LedgerTransport): Promise<Buffer> {
         let promises: Buffer[] = [];
@@ -121,11 +126,14 @@ export class Apdu {
      *
      * @returns {Buffer} the chunked payload of an Apdu instance
      */
-    private getChunks(): Buffer[] {
-        return this._payload
-            .toString("hex")
-            .match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"))! // @ts-ignore
-            .map((chunk) => Buffer.from(chunk, "hex"));
+    protected getPayloadChunks(): Buffer[] {
+        const matched = this._payload.toString("hex").match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"));
+
+        if (matched) {
+            return matched.map((chunk) => Buffer.from(chunk, "hex"));
+        } else {
+            throw new ApduPayloadChunkError();
+        }
     }
 
     /**
@@ -135,7 +143,7 @@ export class Apdu {
      * @param {Buffer} length total length of the payload
      * @returns {ApduFlag} which segment of a payload is being sent
      */
-    private getSegmentFlag(index: number, length: number): ApduFlag {
+    private getChunkSegmentFlag(index: number, length: number): ApduFlag {
         /** set the payload segment flag */
         if (index > 0 && index < length - 1) {
             /** N(2)..N-1 where N > 2 */
@@ -155,7 +163,7 @@ export class Apdu {
      * @returns {Promise<Buffer>} the apdu response, e.g. from a Ledger device
      */
     private async sendChunked(transport: LedgerTransport): Promise<Buffer[]> {
-        const chunks = this.getChunks();
+        const chunks = this.getPayloadChunks();
         const promises: Buffer[] = [];
 
         let index = 0;
@@ -164,7 +172,7 @@ export class Apdu {
                 await transport.send(
                     this.cla,
                     this.ins,
-                    this.getSegmentFlag(index, chunks.length),
+                    this.getChunkSegmentFlag(index, chunks.length),
                     this.p2,
                     chunk,
                 ),

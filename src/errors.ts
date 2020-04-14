@@ -22,6 +22,12 @@ export class ApduPayloadLengthError extends LedgerTransportError {
     }
 }
 
+export class ApduPayloadChunkError extends LedgerTransportError {
+    public constructor() {
+        super("Payload Chunking Failure.");
+    }
+}
+
 export class Bip32ElementError extends LedgerTransportError {
     public constructor() {
         super("Invalid Bip32 Element.");

@@ -1,7 +1,7 @@
 import { Bip32ElementError, Bip32PathError } from "./errors";
 
 /**
- * Handle the Parsing of Bip32 Paths
+ * Static builder for handling the parsing of Bip32 Paths.
  *
  * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
  * https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
