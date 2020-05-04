@@ -1,41 +1,28 @@
-export class LedgerTransportError extends Error {
-    public constructor(message: string) {
-        super(message);
+import * as LedgerHQErrors from "@ledgerhq/errors";
 
-        Object.defineProperty(this, "message", {
-            enumerable: false,
-            value: message,
+export class MessageAsciiError extends LedgerHQErrors.TransportStatusError {
+    public constructor() {
+        super({
+            statusText: `Message must contain printable ASCII characters.`,
+            statusCode: LedgerHQErrors.StatusCodes.INCORRECT_DATA,
         });
-
-        Object.defineProperty(this, "name", {
-            enumerable: false,
-            value: this.constructor.name,
-        });
-
-        Error.captureStackTrace(this, this.constructor);
     }
 }
 
-export class ApduPayloadLengthError extends LedgerTransportError {
+export class PayloadLengthError extends LedgerHQErrors.TransportStatusError {
     public constructor(expected: number, limit: number) {
-        super(`Payload length of ${expected} exceeds ${limit}.`);
+        super({
+            statusText: `Payload length of ${expected} exceeds ${limit}.`,
+            statusCode: LedgerHQErrors.StatusCodes.INCORRECT_LENGTH,
+        });
     }
 }
 
-export class ApduPayloadChunkError extends LedgerTransportError {
-    public constructor() {
-        super("Payload Chunking Failure.");
-    }
-}
-
-export class Bip32ElementError extends LedgerTransportError {
-    public constructor() {
-        super("Invalid Bip32 Element.");
-    }
-}
-
-export class Bip32PathError extends LedgerTransportError {
-    public constructor() {
-        super("Invalid Bip32 Path.");
+export class Bip44PathError extends LedgerHQErrors.TransportStatusError {
+    public constructor(path: string) {
+        super({
+            statusText: `Bip44 Path '${path}' is Invalid`,
+            statusCode: LedgerHQErrors.StatusCodes.INCORRECT_DATA,
+        });
     }
 }

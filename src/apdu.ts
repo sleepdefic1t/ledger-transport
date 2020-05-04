@@ -1,6 +1,6 @@
 import { Transport as LedgerTransport } from "@ledgerhq/hw-transport";
 
-import { ApduPayloadChunkError, ApduPayloadLengthError } from "./errors";
+import * as TransportErrors from "./errors";
 
 /**
  * APDU Header Flags
@@ -89,33 +89,43 @@ export class Apdu {
      * @param {number} p1 a parameter-1 byte
      * @param {number} p2 a parameter-2 byte
      * @param {Buffer} payload an optional payload
-     * @throws {ApduPayloadLengthError} if the payload is too big to be processed
+     * @throws {PayloadLengthError} if the payload is too big to be processed
      */
     public constructor(cla: number, ins: number, p1: number, p2: number, payload: Buffer = Buffer.alloc(0)) {
+        if (payload && payload.length > this.PAYLOAD_MAX) {
+            throw new TransportErrors.PayloadLengthError(payload.length, this.PAYLOAD_MAX);
+        }
+
         this.cla = cla;
         this.ins = ins;
         this.p1 = p1;
         this.p2 = p2;
-        if (payload.length < this.PAYLOAD_MAX) {
-            this._payload = payload;
-        } else {
-            throw new ApduPayloadLengthError(payload.length, this.PAYLOAD_MAX);
-        }
+        this._payload = payload;
     }
 
     /**
-     * Send an Apdu payload for handling by a Ledger device.
+     * Send a large Apdu payload in chunks for handling by a Ledger device.
      *
-     * @param {LedgerTransport} transport the transport instance over which to send the apdu call
-     * @returns {Promise<Buffer>} the apdu response from a Ledger device
+     * @param {LedgerTransport} transport the transport instance over which the apdu call is sent
+     * @returns {Promise<Buffer>} the apdu response, e.g. from a Ledger device
      */
     public async send(transport: LedgerTransport): Promise<Buffer> {
-        let promises: Buffer[] = [];
+        const chunks = this.getChunks(this._payload, this.CHUNK_SIZE);
 
-        if (this._payload.length < this.CHUNK_SIZE) {
-            promises.push(await transport.send(this.cla, this.ins, this.p1, this.p2, this._payload));
-        } else {
-            promises = await this.sendChunked(transport);
+        const promises: Buffer[] = [];
+        let index = 0;
+        for (const chunk of chunks) {
+            promises.push(
+                await transport.send(
+                    this.cla,
+                    this.ins,
+                    this.getChunkSegmentFlag(index, chunks.length),
+                    this.p2,
+                    chunk,
+                ),
+            );
+
+            index += 1;
         }
 
         return Buffer.concat(promises.map((r) => r.slice(0, r.length - 2)));
@@ -124,16 +134,16 @@ export class Apdu {
     /**
      * Split the Apdu Payload into a Chunked Array.
      *
-     * @returns {Buffer} the chunked payload of an Apdu instance
+     * @param {Buffer} payload the bytes to be chunked
+     * @param {number} chunkSize the element size by which to split the payload
+     * @returns {Buffer[]} the chunked payload of an Apdu instance
      */
-    protected getPayloadChunks(): Buffer[] {
-        const matched = this._payload.toString("hex").match(new RegExp(`.{1,${this.CHUNK_SIZE * 2}}`, "g"));
-
-        if (matched) {
-            return matched.map((chunk) => Buffer.from(chunk, "hex"));
-        } else {
-            throw new ApduPayloadChunkError();
-        }
+    protected getChunks(payload: Buffer, chunkSize: number): Buffer[] {
+        return this._payload.length <= this.CHUNK_SIZE
+            ? [this._payload]
+            : Array.from({ length: Math.ceil(payload.length / chunkSize) }, (v, i) =>
+                  payload.slice(i * chunkSize, i * chunkSize + chunkSize),
+              );
     }
 
     /**
@@ -151,35 +161,14 @@ export class Apdu {
         } else if (index === length - 1 && length > 1) {
             /** Nth where N > 1 */
             return ApduFlag.P1_LAST;
-        } else {
+        } else if (index === 0 && length > 1) {
+            /** N(1) where N > 1 */
             return ApduFlag.P1_FIRST;
+        } else {
+            return this.p1;
         }
-    }
-
-    /**
-     * Send a large Apdu payload in chunks for handling by a Ledger device.
-     *
-     * @param {LedgerTransport} transport the transport instance over which to send the apdu call
-     * @returns {Promise<Buffer>} the apdu response, e.g. from a Ledger device
-     */
-    private async sendChunked(transport: LedgerTransport): Promise<Buffer[]> {
-        const chunks = this.getPayloadChunks();
-        const promises: Buffer[] = [];
-
-        let index = 0;
-        for (const chunk of chunks) {
-            promises.push(
-                await transport.send(
-                    this.cla,
-                    this.ins,
-                    this.getChunkSegmentFlag(index, chunks.length),
-                    this.p2,
-                    chunk,
-                ),
-            );
-            index += 1;
-        }
-
-        return promises;
     }
 }
+
+export { ApduFlag as Flag };
+export { Apdu as Builder };

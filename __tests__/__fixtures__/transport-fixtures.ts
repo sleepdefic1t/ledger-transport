@@ -6,9 +6,15 @@ export const Fixtures = {
         `,
         result: "2.0.1",
     },
-    bip32Path: {
-        invalid: "44'/xxx'/0'/0/0",
-        valid: "44'/111'/0'/0/0",
+    bip44: {
+        path: {
+            invalid: "44'/11x'/0'/0/0",
+            valid: "44'/111'/0'/0/0",
+        },
+        prefixed: {
+            path: "m/44'/111'/0'/0/0",
+            result: Buffer.from("058000002C8000006F800000000000000000000000", "hex"),
+        },
     },
     message: {
         ecdsa: {
@@ -23,6 +29,7 @@ export const Fixtures = {
             result:
                 "304402202458b0765f6183c25799eacbaa1e1edba4c76453c84fdf0eb5d67d32010ef87f022061bbb21d056a401e3d99d34dbf92a45b5449a2a2ef3ccc93068b887f11f3956c",
         },
+        invalid: "tëst",
     },
     publicKey: {
         record: `

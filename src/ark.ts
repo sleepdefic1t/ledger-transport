@@ -1,20 +1,10 @@
 import { Transport as LedgerTransport } from "@ledgerhq/hw-transport";
 
-import { Apdu, ApduFlag } from "./apdu";
-import { Bip32Path } from "./bip32";
-import { Transport } from "./contracts";
+import * as Apdu from "./apdu";
+import * as Bip44 from "./bip44";
+import * as TransportErrors from "./errors";
 
-/**
- * ARK Ledger Transport Class.
- *
- * Send APDU Payloads to a Ledger Device.
- *
- * - INS_GET_PUBLIC_KEY
- * - INS_GET_VERSION
- * - INS_SIGN_TRANSACTION
- * - INS_SIGN_MESSAGE
- */
-export class ARK implements Transport {
+export class ARK implements LedgerTransport {
     private transport: LedgerTransport;
 
     /**
@@ -24,7 +14,6 @@ export class ARK implements Transport {
      * preventing race conditions where parallel calls are attempted.
      *
      * @param {LedgerTransport} transport generic transport interface for Ledger HW.
-     * @throws {Error} if 'LedgerTransport' is busy with another instruction.
      */
     public constructor(transport: LedgerTransport) {
         this.transport = transport;
@@ -41,29 +30,29 @@ export class ARK implements Transport {
      * @returns {Promise<string>} installed application version (e.g. '2.0.1')
      */
     public async getVersion(): Promise<string> {
-        const response = await new Apdu(
-            ApduFlag.CLA,
-            ApduFlag.INS_GET_VERSION,
-            ApduFlag.P1_NON_CONFIRM,
-            ApduFlag.P2_NO_CHAINCODE,
+        const response = await new Apdu.Builder(
+            Apdu.Flag.CLA,
+            Apdu.Flag.INS_GET_VERSION,
+            Apdu.Flag.P1_NON_CONFIRM,
+            Apdu.Flag.P2_NO_CHAINCODE,
         ).send(this.transport);
 
         return `${response[1]}.${response[2]}.${response[3]}`;
     }
 
     /**
-     * Get the PublicKey from a Ledger Device using a Bip32 path-string.
+     * Get the PublicKey from a Ledger Device using a Bip44 path-string.
      *
-     * @param {string} path bip32 path as a string
+     * @param {string} path bip44 path as a string
      * @returns {Promise<string>} device compressed publicKey
      */
     public async getPublicKey(path: string): Promise<string> {
-        const response = await new Apdu(
-            ApduFlag.CLA,
-            ApduFlag.INS_GET_PUBLIC_KEY,
-            ApduFlag.P1_NON_CONFIRM,
-            ApduFlag.P2_NO_CHAINCODE,
-            Bip32Path.fromString(path).toBytes(),
+        const response = await new Apdu.Builder(
+            Apdu.Flag.CLA,
+            Apdu.Flag.INS_GET_PUBLIC_KEY,
+            Apdu.Flag.P1_NON_CONFIRM,
+            Apdu.Flag.P2_NO_CHAINCODE,
+            Bip44.Path.fromString(path).toBytes(),
         ).send(this.transport);
 
         return response.slice(1, 1 + response[0]).toString("hex");
@@ -72,40 +61,42 @@ export class ARK implements Transport {
     /**
      * Sign a Message using a Ledger Device.
      *
-     * @param {string} path bip32 path as a string
-     * @param {Buffer} hex transaction payload hex
+     * @param {string} path bip44 path as a string
+     * @param {Buffer} message message payload
+     * @throws {ARKTransportMessageAsciiError} if the message contains non-ascii characters
      * @returns {Promise<string>} payload signature
      */
-    public async signMessage(path: string, hex: Buffer): Promise<string> {
-        return this.sign(ApduFlag.INS_SIGN_MESSAGE, path, hex);
+    public async signMessage(path: string, message: Buffer): Promise<string> {
+        const REGEXP_INVALID_MESSAGE: string = "[^\x00-\x7F]";
+        if (message.toString().match(new RegExp(REGEXP_INVALID_MESSAGE, "g"))) {
+            throw new TransportErrors.MessageAsciiError();
+        }
+
+        const response = await new Apdu.Builder(
+            Apdu.Flag.CLA,
+            Apdu.Flag.INS_SIGN_MESSAGE,
+            Apdu.Flag.P1_SINGLE,
+            Apdu.Flag.P2_ECDSA,
+            Buffer.concat([Bip44.Path.fromString(path).toBytes(), message]),
+        ).send(this.transport);
+
+        return response.toString("hex");
     }
 
     /**
      * Sign a Transaction using a Ledger Device.
      *
-     * @param {string} path bip32 path as a string
-     * @param {Buffer} hex transaction payload hex
+     * @param {string} path bip44 path as a string
+     * @param {Buffer} payload transaction bytes
      * @returns {Promise<string>} payload signature
      */
-    public async signTransaction(path: string, hex: Buffer): Promise<string> {
-        return this.sign(ApduFlag.INS_SIGN_TRANSACTION, path, hex);
-    }
-
-    /**
-     * Sign using a Ledger Device.
-     *
-     * @param {number} ins type of operation (e.g. Transaction, Message, etc.)
-     * @param {string} path Bip32 Path string
-     * @param {Buffer} hex transaction payload hex
-     * @returns {Promise<string>} payload signature
-     */
-    private async sign(ins: number, path: string, hex: Buffer): Promise<string> {
-        const response = await new Apdu(
-            ApduFlag.CLA,
-            ins,
-            ApduFlag.P1_SINGLE,
-            ApduFlag.P2_ECDSA,
-            Buffer.concat([Bip32Path.fromString(path).toBytes(), hex]),
+    public async signTransaction(path: string, payload: Buffer): Promise<string> {
+        const response = await new Apdu.Builder(
+            Apdu.Flag.CLA,
+            Apdu.Flag.INS_SIGN_TRANSACTION,
+            Apdu.Flag.P1_SINGLE,
+            Apdu.Flag.P2_ECDSA,
+            Buffer.concat([Bip44.Path.fromString(path).toBytes(), payload]),
         ).send(this.transport);
 
         return response.toString("hex");
