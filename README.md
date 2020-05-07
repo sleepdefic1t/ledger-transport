@@ -4,6 +4,8 @@
     <img src="./banner.png" />
 </p>
 
+[![](https://github.com/sleepdefic1t/ledger-transport/workflows/Test/badge.svg)](https://github.com/sleepdefic1t/ledger-transport/actions)
+[![](https://github.com/sleepdefic1t/ledger-transport/workflows/Coverage/badge.svg)](https://github.com/ArkEcosystem/ledger-transport/actions)
 [![License: MIT](https://badgen.now.sh/badge/license/MIT/green)](https://opensource.org/licenses/MIT)
 
 > Lead Maintainer: [Alex Barnsley](https://github.com/alexbarnsley)

@@ -9,7 +9,7 @@ on:
         types: [ready_for_review, synchronize, opened]
 
 jobs:
-    lint:
+    source:
         runs-on: ubuntu-latest
 
         strategy:
